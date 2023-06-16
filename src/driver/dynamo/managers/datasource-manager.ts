@@ -11,7 +11,6 @@ import { DynamoEntityManager } from '../entity-manager/DynamoEntityManager'
 import { PlatformTools } from 'typeorm/platform/PlatformTools'
 import path from 'path'
 import { PagingAndSortingRepository } from '../repository/PagingAndSortingRepository'
-import { SqljsEntityManager } from 'typeorm/entity-manager/SqljsEntityManager'
 import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver'
 import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver'
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver'
@@ -21,7 +20,6 @@ import { BetterSqlite3Driver } from 'typeorm/driver/better-sqlite3/BetterSqlite3
 import { CordovaDriver } from 'typeorm/driver/cordova/CordovaDriver'
 import { NativescriptDriver } from 'typeorm/driver/nativescript/NativescriptDriver'
 import { ReactNativeDriver } from 'typeorm/driver/react-native/ReactNativeDriver'
-import { SqljsDriver } from 'typeorm/driver/sqljs/SqljsDriver'
 import { OracleDriver } from 'typeorm/driver/oracle/OracleDriver'
 import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver'
 import { MongoDriver } from 'typeorm/driver/mongodb/MongoDriver'
@@ -59,6 +57,8 @@ DriverFactory.prototype.create = (connection: DataSource) => {
     case 'react-native':
         return new ReactNativeDriver(connection)
     case 'sqljs':
+        // eslint-disable-next-line no-case-declarations
+        const SqljsDriver = require('typeorm/driver/sqljs/SqljsDriver')
         return new SqljsDriver(connection)
     case 'oracle':
         return new OracleDriver(connection)
@@ -110,6 +110,7 @@ EntityManagerFactory.prototype.create = (connection: DataSource, queryRunner?: Q
     } else if (type === 'mongodb') {
         entityManager = new MongoEntityManager(connection)
     } else if (type === 'sqljs') {
+        const SqljsEntityManager = require('typeorm/entity-manager/SqljsEntityManager')
         entityManager = new SqljsEntityManager(connection, queryRunner)
     } else {
         entityManager = new EntityManager(connection, queryRunner)

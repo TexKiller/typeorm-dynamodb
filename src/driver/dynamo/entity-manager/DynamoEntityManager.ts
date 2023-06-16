@@ -29,8 +29,8 @@ import { BatchWriteItem } from '../models/BatchWriteItem'
 import { DataSource } from 'typeorm/data-source'
 import { mixin, isEmpty } from '../helpers/DynamoObjectHelper'
 import { getDocumentClient } from '../DynamoClient'
-import { unmarshall } from '@aws-sdk/util-dynamodb'
 import { PagingAndSortingRepository } from '../repository/PagingAndSortingRepository'
+import { unmarshall } from '@aws-sdk/util-dynamodb'
 
 // todo: we should look at the @PrimaryKey on the entity
 const DEFAULT_KEY_MAPPER = (item: any) => {
