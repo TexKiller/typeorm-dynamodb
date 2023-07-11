@@ -407,7 +407,7 @@ export class DynamoEntityManager extends EntityManager {
                 const request: any = {}
                 const itemOrKey: any = {}
                 const key = write.type === 'PutRequest' ? 'Item' : 'Key'
-                itemOrKey[key] = marshall(write.item, { convertClassInstanceToMap: true })
+                itemOrKey[key] = write.item
                 request[write.type] = itemOrKey
                 return request
             })

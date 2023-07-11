@@ -18,11 +18,12 @@ import {
     CreateTableInput,
     UpdateTableInput,
     UpdateTableCommand,
-    ListTablesInput, BatchGetItemCommand, BatchWriteItemCommand
+    ListTablesInput, BatchGetItemCommand
 } from '@aws-sdk/client-dynamodb'
 import { NodeHttpHandler } from '@aws-sdk/node-http-handler'
 import { environmentUtils } from './utils/environment-utils'
 import {
+    BatchWriteCommand,
     DeleteCommand,
     DynamoDBDocumentClient,
     PutCommand, UpdateCommand
@@ -98,7 +99,7 @@ export class DynamoClient {
         if (environmentUtils.isTrue('DEBUG_DYNAMODB')) {
             console.log('dynamodb batchWrite', params)
         }
-        return this.getClient().send(new BatchWriteItemCommand(params))
+        return this.getClient().send(new BatchWriteCommand(params))
     }
 
     deleteTable (params: DeleteTableInput) {
