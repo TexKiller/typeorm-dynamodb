@@ -30,7 +30,7 @@ import { DataSource } from 'typeorm/data-source'
 import { mixin, isEmpty } from '../helpers/DynamoObjectHelper'
 import { getDocumentClient } from '../DynamoClient'
 import { PagingAndSortingRepository } from '../repository/PagingAndSortingRepository'
-import { unmarshall } from '@aws-sdk/util-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 // todo: we should look at the @PrimaryKey on the entity
 const DEFAULT_KEY_MAPPER = (item: any) => {
@@ -41,6 +41,10 @@ const DEFAULT_KEY_MAPPER = (item: any) => {
 
 const unmarshallAll = (items?: any[]) => {
     return (items || []).map(item => unmarshall(item))
+}
+
+const marshallAll = (items?: any[]) => {
+    return (items || []).map(item => marshall(item))
 }
 
 export class DynamoEntityManager extends EntityManager {
@@ -368,15 +372,16 @@ export class DynamoEntityManager extends EntityManager {
         const batches = dynamoBatchHelper.batch(keys, 100)
         let items: any[] = []
         for (let i = 0; i < batches.length; i++) {
-            const batch = batches[i]
+            const batch = marshallAll(batches[i])
             const requestItems: any = {}
             requestItems[metadata.tablePath] = {
                 Keys: batch
             }
+            const request = {
+                RequestItems: requestItems
+            }
             const response = await dbClient
-                .batchGet({
-                    RequestItems: requestItems
-                })
+                .batchGet(request)
             if (response.Responses !== undefined) {
                 items = items.concat(unmarshallAll(response.Responses[metadata.tablePath]))
             }
@@ -400,15 +405,17 @@ export class DynamoEntityManager extends EntityManager {
             const requestItems: any = {}
             requestItems[metadata.tablePath] = batch.map((write: any) => {
                 const request: any = {}
-                request[write.type] = {
-                    Item: write.item
-                }
+                const itemOrKey: any = {}
+                const key = write.type === 'PutRequest' ? 'Item' : 'Key'
+                itemOrKey[key] = marshall(write.item, { convertClassInstanceToMap: true })
+                request[write.type] = itemOrKey
                 return request
             })
+            const request = {
+                RequestItems: requestItems
+            }
             await dbClient
-                .batchWrite({
-                    RequestItems: requestItems
-                })
+                .batchWrite(request)
         }
     }
 }

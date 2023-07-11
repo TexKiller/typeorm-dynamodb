@@ -129,6 +129,50 @@ describe('dynamic-repository', () => {
         expect(getStub.calledOnce).toBe(true)
         expect(items.length).toBe(1)
     })
+    it('batchGetAndBatchWrite', async (): Promise<any> => {
+        await open({
+            entities: [Dummy],
+            synchronize: true
+        })
+        const repository = getRepository(Dummy)
+
+        const dummy = new Dummy()
+        dummy.id = '123'
+        dummy.name = 'some-dummy-name'
+        dummy.adjustmentGroupId = '1'
+        dummy.adjustmentStatus = 'processed'
+
+        const results: any = {
+            Responses: {
+                dummy_t: [marshall(dummy, { convertClassInstanceToMap: true })]
+            }
+        }
+
+        const batchWriteStub = sinon.stub(DynamoClient.prototype, 'batchWrite')
+        batchWriteStub.resolves()
+        const batchGetStub = sinon.stub(DynamoClient.prototype, 'batchGet')
+        batchGetStub.resolves(results)
+
+        await repository.batchWrite([
+            {
+                type: 'PutRequest',
+                item: dummy
+            }
+        ])
+
+        const items = await repository.batchRead([{ id: '123' }])
+
+        await repository.batchWrite([
+            {
+                type: 'DeleteRequest',
+                item: { id: dummy.id }
+            }
+        ])
+
+        expect(batchGetStub.calledOnce).toBe(true)
+        expect(batchWriteStub.calledTwice).toBe(true)
+        expect(items.length).toBe(1)
+    })
     it('scan', async (): Promise<any> => {
         await open({
             entities: [Dummy],
