@@ -23,11 +23,11 @@ describe('annotation-parser', () => {
 
             // TODO: this is where we would build the CDK tables and indexes ...
             tables.push(entityAnnotation)
-            indexes.push(globalSecondaryIndexes)
+            indexes.push(...globalSecondaryIndexes)
         }
 
         /** then: annotations are parsed **/
-        expect(tables.length).toBe(1)
-        expect(indexes.length).toBe(1)
+        expect(tables.length).toBe(2)
+        expect(indexes.length).toBe(5)
     })
 })

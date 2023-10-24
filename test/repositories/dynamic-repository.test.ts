@@ -1,6 +1,7 @@
 import expect from 'expect'
 import { open, getRepository, DynamoClient } from '../../src'
 import { Dummy } from '../entities/dummy'
+import { Request } from '../entities/request'
 import sinon from 'sinon'
 import { marshall } from '@aws-sdk/util-dynamodb'
 
@@ -10,7 +11,7 @@ describe('dynamic-repository', () => {
     })
     it('put undefined', async (): Promise<any> => {
         await open({
-            entities: [Dummy],
+            entities: [Dummy, Request],
             synchronize: true
         })
         const repository = getRepository(Dummy)
@@ -41,7 +42,7 @@ describe('dynamic-repository', () => {
     })
     it('query', async (): Promise<any> => {
         await open({
-            entities: [Dummy],
+            entities: [Dummy, Request],
             synchronize: true
         })
         const repository = getRepository(Dummy)
@@ -71,7 +72,7 @@ describe('dynamic-repository', () => {
     })
     it('find', async (): Promise<any> => {
         await open({
-            entities: [Dummy],
+            entities: [Dummy, Request],
             synchronize: true
         })
         const repository = getRepository(Dummy)
@@ -101,7 +102,7 @@ describe('dynamic-repository', () => {
     })
     it('findAll', async (): Promise<any> => {
         await open({
-            entities: [Dummy],
+            entities: [Dummy, Request],
             synchronize: true
         })
         const repository = getRepository(Dummy)
@@ -131,7 +132,7 @@ describe('dynamic-repository', () => {
     })
     it('batchGetAndBatchWrite', async (): Promise<any> => {
         await open({
-            entities: [Dummy],
+            entities: [Dummy, Request],
             synchronize: true
         })
         const repository = getRepository(Dummy)
@@ -175,7 +176,7 @@ describe('dynamic-repository', () => {
     })
     it('scan', async (): Promise<any> => {
         await open({
-            entities: [Dummy],
+            entities: [Dummy, Request],
             synchronize: true
         })
         const repository = getRepository(Dummy)
@@ -208,7 +209,7 @@ describe('dynamic-repository', () => {
         const updateStub = sinon.stub(DynamoClient.prototype, 'update').resolves()
 
         await open({
-            entities: [Dummy],
+            entities: [Dummy, Request],
             synchronize: true
         })
         await getRepository(Dummy).updateExpression({
@@ -244,7 +245,7 @@ describe('dynamic-repository', () => {
             }
         }
 
-        expect(createTableStub.calledOnce).toBe(true)
+        expect(createTableStub.calledTwice).toBe(true)
         expect(updateStub.calledWith(expected)).toBe(true)
     })
 
@@ -252,7 +253,7 @@ describe('dynamic-repository', () => {
         const updateStub = sinon.stub(DynamoClient.prototype, 'update').resolves()
 
         await open({
-            entities: [Dummy]
+            entities: [Dummy, Request]
         })
         await getRepository(Dummy).updateExpression({
             where: {
@@ -289,6 +290,40 @@ describe('dynamic-repository', () => {
             }
         }
 
+        expect(updateStub.calledWith(expected)).toBe(true)
+    })
+
+    it('updateExpression 3', async (): Promise<any> => {
+        const createTableStub = sinon.stub(DynamoClient.prototype, 'createTable').resolves()
+        const updateStub = sinon.stub(DynamoClient.prototype, 'update').resolves()
+        await open({
+            entities: [Dummy, Request],
+            synchronize: true
+        })
+        await getRepository(Request).updateExpression({
+            where: {
+                id: '111-222-333'
+            },
+            setValues: {
+                overdue: 'Y'
+            }
+        })
+
+        const expected: any = {
+            TableName: 'request',
+            Key: {
+                id: '111-222-333'
+            },
+            UpdateExpression: 'SET #overdue = :overdue',
+            ExpressionAttributeNames: {
+                '#overdue': 'overdue'
+            },
+            ExpressionAttributeValues: {
+                ':overdue': 'Y'
+            }
+        }
+
+        expect(createTableStub.calledTwice).toBe(true)
         expect(updateStub.calledWith(expected)).toBe(true)
     })
 })

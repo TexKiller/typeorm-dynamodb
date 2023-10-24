@@ -12,16 +12,33 @@ export const buildPartitionKey = (columns: ColumnMetadata[]) => {
         .join('#')
 }
 
-const partitionKeyColumns = (columns: ColumnMetadata[], doc: ObjectLiteral) => {
+const requiresIndexedValues = (partitionKey: string, doc: any, operation?: 'PutItem' | 'PutMany' | 'UpdateExpression') => {
+    if (operation === 'UpdateExpression') {
+        const properties = partitionKey.split('#')
+        for (let i = 0; i < properties.length; i += 1) {
+            const propertyName = properties[i]
+            const value = doc[propertyName]
+            if (value) {
+                return true
+            }
+        }
+        return false
+    }
+    return true
+}
+
+const partitionKeyColumns = (columns: ColumnMetadata[], doc: ObjectLiteral, operation?: 'PutItem' | 'PutMany' | 'UpdateExpression') => {
     if (columns.length > 1) {
         const partitionKey = buildPartitionKey(columns)
-        doc[partitionKey] = columns.map((column) => {
-            const value = doc[column.propertyName]
-            if (value === undefined) {
-                throw new Error(`value not provided for indexed column: ${column.propertyName}`)
-            }
-            return value
-        }).join('#')
+        if (requiresIndexedValues(partitionKey, doc, operation)) {
+            doc[partitionKey] = columns.map((column) => {
+                const value = doc[column.propertyName]
+                if (value === undefined) {
+                    throw new Error(`value not provided for indexed column: ${column.propertyName}`)
+                }
+                return value
+            }).join('#')
+        }
     }
 }
 
@@ -36,12 +53,12 @@ const sortKeyColumns = (sortKey: string, doc: ObjectLiteral) => {
     }
 }
 
-export const indexedColumns = (metadata: EntityMetadata, doc: any) => {
+export const indexedColumns = (metadata: EntityMetadata, doc: any, operation?: 'PutItem' | 'PutMany' | 'UpdateExpression') => {
     const indices = metadata.indices || []
     for (let i = 0; i < indices.length; i += 1) {
         const index = indices[i]
         const columns = index.columns || []
-        partitionKeyColumns(columns, doc)
+        partitionKeyColumns(columns, doc, operation)
         sortKeyColumns(index.where || '', doc)
     }
 }

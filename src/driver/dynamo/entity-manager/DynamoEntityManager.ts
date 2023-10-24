@@ -89,7 +89,7 @@ export class DynamoEntityManager extends EntityManager {
     ) {
         const metadata = this.connection.getMetadata(entityClassOrName)
         const changedValues = mixin(options.setValues || {}, options.where)
-        indexedColumns(metadata, changedValues)
+        indexedColumns(metadata, changedValues, 'UpdateExpression')
         mixin(options.setValues, changedValues)
         if (options.setValues && options.setValues.id !== undefined) {
             delete options.setValues.id
@@ -342,7 +342,7 @@ export class DynamoEntityManager extends EntityManager {
     ): Promise<void> {
         const metadata = this.connection.getMetadata(entityClassOrName)
         docs.forEach((doc: ObjectLiteral) => {
-            indexedColumns(metadata, doc)
+            indexedColumns(metadata, doc, 'PutMany')
         })
         return this.dynamodbQueryRunner.putMany(metadata.tablePath, docs)
     }
@@ -355,7 +355,7 @@ export class DynamoEntityManager extends EntityManager {
         doc: ObjectLiteral
     ): Promise<ObjectLiteral> {
         const metadata = this.connection.getMetadata(entityClassOrName)
-        indexedColumns(metadata, doc)
+        indexedColumns(metadata, doc, 'PutItem')
         populateGeneratedColumns(metadata, doc)
         return this.dynamodbQueryRunner.putOne(metadata.tablePath, doc)
     }
