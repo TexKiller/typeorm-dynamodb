@@ -2,6 +2,7 @@ import { dynamoAttributeHelper } from '../helpers/DynamoAttributeHelper'
 import { poundToUnderscore } from '../helpers/DynamoTextHelper'
 import { isNotEmpty } from '../helpers/DynamoObjectHelper'
 import { marshall } from '@aws-sdk/util-dynamodb'
+import { commonUtils } from '../utils/common-utils'
 
 export class BeginsWith {
     attribute: string
@@ -15,11 +16,14 @@ export class FindOptions {
     limit?: number
     sort?: string
     exclusiveStartKey?: string
+    filter?: string
+    select?: string
 
     static toAttributeNames (findOptions: FindOptions) {
         return dynamoAttributeHelper.toAttributeNames(
             findOptions.where,
-            findOptions.beginsWith
+            findOptions.beginsWith,
+            findOptions.filter
         )
     }
 
@@ -48,10 +52,15 @@ export class FindOptions {
         return expression
     }
 
+    static captureQuotes (text: string) {
+        const matches = text.match(/'[^'"]*'(?=(?:[^"]*"[^"]*")*[^"]*$)/g)
+        return matches && matches.length > 0 ? matches[0] : text
+    }
+
     static toExpressionAttributeValues (findOptions: FindOptions) {
+        const values: any = {}
         if (isNotEmpty(findOptions.where)) {
             const keys = Object.keys(findOptions.where)
-            const values: any = {}
             for (let i = 0; i < keys.length; i++) {
                 const key = keys[i]
                 values[`:${poundToUnderscore(key)}`] = marshall(findOptions.where[key])
@@ -61,7 +70,44 @@ export class FindOptions {
                     `:${poundToUnderscore(findOptions.beginsWith.attribute)}`
                 ] = marshall(findOptions.beginsWith.value)
             }
-            return values
+        }
+        if (findOptions.filter) {
+            const expressions = findOptions.filter.split(/and|or/gi).map(expression => expression.trim())
+            expressions.forEach(expression => {
+                // todo check for contains
+                const parts = expression.trim().split(/=|<>/gi)
+                if (parts.length === 2) {
+                    const name = parts[0].trim()
+                    const value = FindOptions.captureQuotes(parts[1].trim())
+                    values[
+                        `:${poundToUnderscore(name)}`
+                    ] = marshall(value.replace(/'/g, ''))
+                } else {
+                    throw Error(`Failed to convert filter to ExpressionAttributeValues: ${findOptions.filter}`)
+                }
+            })
+        }
+        return commonUtils.isNotEmpty(values) ? values : undefined
+    }
+
+    static toFilterExpression (options: FindOptions) {
+        if (options.filter) {
+            let filterExpression = `${options.filter}`
+            const expressions = options.filter.split(/and|or/gi).map(expression => expression.trim())
+            expressions.forEach(expression => {
+                // todo check for contains
+                const parts = expression.trim().split(/=|<>/gi)
+                if (parts.length === 2) {
+                    const name = parts[0].trim()
+                    const value = FindOptions.captureQuotes(parts[1].trim())
+                    const re = new RegExp(`${name}(?=(?:(?:[^']*'){2})*[^']*$)`)
+                    filterExpression = filterExpression.replace(re, `#${poundToUnderscore(name)}`)
+                    filterExpression = filterExpression.replace(value, `:${poundToUnderscore(name)}`)
+                } else {
+                    throw Error(`Failed to convert filter to ExpressionAttributeValues: ${options.filter}`)
+                }
+            })
+            return filterExpression
         }
         return undefined
     }

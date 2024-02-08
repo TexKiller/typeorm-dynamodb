@@ -30,6 +30,10 @@ export const environmentUtils = {
         return environmentUtils.getVariable('NODE_ENV') || ''
     },
 
+    getDatabaseEnv (): string {
+        return environmentUtils.getVariable('DATABASE_ENV') || ''
+    },
+
     getVariable (name: string): any {
         return process.env[name]
     },

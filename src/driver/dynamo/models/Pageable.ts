@@ -1,11 +1,41 @@
 import { Order } from './Order'
 import { Sort } from './Sort'
 
+const replaceMap = (text: string, map: any) => {
+    if (text) {
+        text = decodeURIComponent(text)
+        Object.keys(map).forEach((key: string) => {
+            const re = new RegExp(` ${key} `, 'ig')
+            const value = map[key]
+            text = text.replace(re, value)
+        })
+        return text
+    }
+    return text
+}
+
+const toDynamoOperators = (text: string) => {
+    return replaceMap(text, {
+        eq: '=',
+        ne: '<>'
+    })
+}
+
+const toQueryStringOperators = (text: string) => {
+    return replaceMap(text, {
+        '=': 'eq',
+        '<>': 'ne'
+    })
+}
+
 export class Pageable {
     pageNumber: number
     pageSize: number
     sort: Sort
     exclusiveStartKey?: string
+    filter?: string
+    select?: string
+
     static DEFAULT_PAGE_NUMBER: number = 0
     static DEFAULT_PAGE_SIZE: number = 15
     static ONE: number = 1
@@ -14,12 +44,16 @@ export class Pageable {
         pageNumber: number,
         pageSize?: number,
         sort?: Sort,
-        exclusiveStartKey?: string
+        exclusiveStartKey?: string,
+        filter?: string,
+        select?: string
     ) {
         this.pageNumber = pageNumber
         this.pageSize = pageSize || Pageable.DEFAULT_PAGE_SIZE
         this.sort = sort || Sort.UNSORTED
         this.exclusiveStartKey = exclusiveStartKey
+        this.filter = filter
+        this.select = select
     }
 
     toQueryString (prefix?: string) {
@@ -32,7 +66,9 @@ export class Pageable {
         if (sort) {
             sort = `&${sort}`
         }
-        return `${prefix}page=${this.pageNumber}&size=${this.pageSize}${sort}`
+        const filter = this.filter ? `&filter=${toQueryStringOperators(this.filter)}` : ''
+        const select = this.select ? `&select=${this.select}` : ''
+        return `${prefix}page=${this.pageNumber}&size=${this.pageSize}${sort}${filter}${select}`
     }
 
     static mixin (params: any, pageable?: any) {
@@ -56,7 +92,9 @@ export class Pageable {
         )
         const sort = Sort.parse(req)
         const exclusiveStartKey = req.query.exclusiveStartKey
-        return Pageable.of(pageNumber, pageSize, sort, exclusiveStartKey)
+        const filter = toDynamoOperators(req.query.filter)
+        const select = req.query.select
+        return Pageable.of(pageNumber, pageSize, sort, exclusiveStartKey, filter, select)
     }
 
     static getDefault () {
@@ -71,8 +109,10 @@ export class Pageable {
         pageNumber: number,
         pageSize?: number,
         sort?: Sort,
-        exclusiveStartKey?: string
+        exclusiveStartKey?: string,
+        filter?: string,
+        select?: string
     ) {
-        return new Pageable(pageNumber, pageSize, sort, exclusiveStartKey)
+        return new Pageable(pageNumber, pageSize, sort, exclusiveStartKey, filter, select)
     }
 }

@@ -42,6 +42,8 @@ export const paramHelper = {
                 FindOptions.toAttributeNames(options),
             ExpressionAttributeValues:
                 FindOptions.toExpressionAttributeValues(options),
+            FilterExpression:
+                FindOptions.toFilterExpression(options),
             ScanIndexForward: options.sort !== 'DESC'
         }
         if (options.index) {
@@ -52,6 +54,9 @@ export const paramHelper = {
         }
         if (options.exclusiveStartKey) {
             params.ExclusiveStartKey = options.exclusiveStartKey
+        }
+        if (options.select) {
+            params.ProjectionExpression = options.select
         }
         return params
     },

@@ -33,6 +33,8 @@ export class PagingAndSortingRepository<T> extends DynamoRepository<T> {
             const firstOrder = pageable.sort.orders[0]
             options.sort = firstOrder.direction
         }
+        options.filter = pageable.filter
+        options.select = pageable.select
         const items: any = await this.find(options)
         return new Page(items, pageable, encode(items.lastEvaluatedKey))
     }

@@ -55,4 +55,7 @@ export class Request {
 
     @Column({ name: 'overdueModified', type: 'varchar' })
     overdueModified: string;
+
+    @Column({ name: 'modified', type: 'varchar' })
+    modified: string;
 }
