@@ -17,14 +17,22 @@ const replaceMap = (text: string, map: any) => {
 const toDynamoOperators = (text: string) => {
     return replaceMap(text, {
         eq: '=',
-        ne: '<>'
+        ne: '<>',
+        lt: '<',
+        gt: '>',
+        ge: '>=',
+        le: '<='
     })
 }
 
 const toQueryStringOperators = (text: string) => {
     return replaceMap(text, {
         '=': 'eq',
-        '<>': 'ne'
+        '<>': 'ne',
+        '<': 'lt',
+        '>': 'gt',
+        '>=': 'ge',
+        '<=': 'le'
     })
 }
 
