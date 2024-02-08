@@ -3,6 +3,42 @@ import { poundToUnderscore } from '../helpers/DynamoTextHelper'
 import { isNotEmpty } from '../helpers/DynamoObjectHelper'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { commonUtils } from '../utils/common-utils'
+import { captureQuotes, splitOperators } from '../parsers/property-parser'
+
+const containsToFilterExpression = (expression: string) => {
+    if (expression && expression.toLowerCase().includes('contains(')) {
+        const haystack = expression.replace(/^contains\(/gi, '').replace(/\)$/, '')
+        const parts = haystack.split(',')
+        if (parts.length === 2) {
+            const name = parts[0].trim()
+            const value = captureQuotes(parts[1].trim())
+            const re = new RegExp(`${name}(?=(?:(?:[^']*'){2})*[^']*$)`)
+            let newExpression = haystack.replace(re, `#${poundToUnderscore(name)}`)
+            newExpression = newExpression.replace(value, `:${poundToUnderscore(name)}`)
+            return `contains(${newExpression})`
+        } else {
+            throw Error(`Failed to parse contains to ExpressionAttributeNames: ${expression}`)
+        }
+    }
+    return expression
+}
+
+const containsToAttributeValues = (expression: string, values: any) => {
+    if (expression && expression.toLowerCase().includes('contains(')) {
+        const haystack = expression.replace(/^contains\(/gi, '').replace(/\)$/, '')
+        const parts = haystack.split(',')
+        if (parts.length === 2) {
+            const name = parts[0].trim()
+            const value = captureQuotes(parts[1].trim()).replace(/'/g, '')
+            values[
+                `:${poundToUnderscore(name)}`
+            ] = marshall(value.replace(/'/g, ''))
+        } else {
+            throw Error(`Failed to parse contains to ExpressionAttributeNames: ${expression}`)
+        }
+    }
+    return expression
+}
 
 export class BeginsWith {
     attribute: string
@@ -52,11 +88,6 @@ export class FindOptions {
         return expression
     }
 
-    static captureQuotes (text: string) {
-        const matches = text.match(/'[^'"]*'(?=(?:[^"]*"[^"]*")*[^"]*$)/g)
-        return matches && matches.length > 0 ? matches[0] : text
-    }
-
     static toExpressionAttributeValues (findOptions: FindOptions) {
         const values: any = {}
         if (isNotEmpty(findOptions.where)) {
@@ -74,16 +105,18 @@ export class FindOptions {
         if (findOptions.filter) {
             const expressions = findOptions.filter.split(/and|or/gi).map(expression => expression.trim())
             expressions.forEach(expression => {
-                // todo check for contains
-                const parts = expression.trim().split(/=|<>/gi)
-                if (parts.length === 2) {
-                    const name = parts[0].trim()
-                    const value = FindOptions.captureQuotes(parts[1].trim())
-                    values[
-                        `:${poundToUnderscore(name)}`
-                    ] = marshall(value.replace(/'/g, ''))
-                } else {
-                    throw Error(`Failed to convert filter to ExpressionAttributeValues: ${findOptions.filter}`)
+                expression = containsToAttributeValues(expression, values)
+                if (!expression.toLowerCase().includes('contains(')) {
+                    const parts = splitOperators(expression)
+                    if (parts.length === 2) {
+                        const name = parts[0].trim()
+                        const value = captureQuotes(parts[1].trim())
+                        values[
+                            `:${poundToUnderscore(name)}`
+                        ] = marshall(value.replace(/'/g, ''))
+                    } else {
+                        throw Error(`Failed to convert filter to ExpressionAttributeValues: ${findOptions.filter}`)
+                    }
                 }
             })
         }
@@ -95,16 +128,18 @@ export class FindOptions {
             let filterExpression = `${options.filter}`
             const expressions = options.filter.split(/and|or/gi).map(expression => expression.trim())
             expressions.forEach(expression => {
-                // todo check for contains
-                const parts = expression.trim().split(/=|<>/gi)
-                if (parts.length === 2) {
-                    const name = parts[0].trim()
-                    const value = FindOptions.captureQuotes(parts[1].trim())
-                    const re = new RegExp(`${name}(?=(?:(?:[^']*'){2})*[^']*$)`)
-                    filterExpression = filterExpression.replace(re, `#${poundToUnderscore(name)}`)
-                    filterExpression = filterExpression.replace(value, `:${poundToUnderscore(name)}`)
-                } else {
-                    throw Error(`Failed to convert filter to ExpressionAttributeValues: ${options.filter}`)
+                filterExpression = containsToFilterExpression(expression)
+                if (!expression.toLowerCase().includes('contains(')) {
+                    const parts = splitOperators(expression)
+                    if (parts.length === 2) {
+                        const name = parts[0].trim()
+                        const value = captureQuotes(parts[1].trim())
+                        const re = new RegExp(`${name}(?=(?:(?:[^']*'){2})*[^']*$)`)
+                        filterExpression = filterExpression.replace(re, `#${poundToUnderscore(name)}`)
+                        filterExpression = filterExpression.replace(value, `:${poundToUnderscore(name)}`)
+                    } else {
+                        throw Error(`Failed to convert filter to ExpressionAttributeValues: ${options.filter}`)
+                    }
                 }
             })
             return filterExpression

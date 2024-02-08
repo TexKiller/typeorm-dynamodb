@@ -174,6 +174,49 @@ describe('dynamic-repository', () => {
         expect(items.length).toBe(1)
     })
 
+    it('filter contains', async (): Promise<any> => {
+        await open({
+            entities: [Dummy, Request],
+            synchronize: true
+        })
+        const repository = getRepository(Dummy)
+
+        const dummy = new Dummy()
+        dummy.id = '123'
+        dummy.name = 'some-dummy-name'
+        dummy.adjustmentGroupId = '1'
+        dummy.adjustmentStatus = 'processed'
+
+        const results: any = {
+            Items: [marshall(dummy, { convertClassInstanceToMap: true })]
+        }
+
+        const getStub = sinon.stub(DynamoClient.prototype, 'scan')
+        getStub.resolves(results)
+        const putStub = sinon.stub(DynamoClient.prototype, 'put')
+        putStub.resolves()
+
+        await repository.put(dummy)
+
+        const items = await repository.findAll({
+            filter: "contains(name, 'dummy')",
+            select: 'id,adjustmentStatus'
+        })
+
+        const expectedInput: any = {
+            FilterExpression: 'contains(#name, :name)',
+            ExpressionAttributeNames: { '#name': 'name' },
+            ExpressionAttributeValues: {
+                ':name': { S: 'dummy' }
+            },
+            ProjectionExpression: 'id,adjustmentStatus'
+        }
+        expect(putStub.calledOnce).toBe(true)
+        expect(getStub.calledOnce).toBe(true)
+        sinon.assert.calledWithMatch(getStub, expectedInput)
+        expect(items.length).toBe(1)
+    })
+
     it('batchGetAndBatchWrite', async (): Promise<any> => {
         await open({
             entities: [Dummy, Request],
