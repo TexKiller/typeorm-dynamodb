@@ -2,6 +2,7 @@ import { BeginsWith } from '../models/FindOptions'
 import { poundToUnderscore } from './DynamoTextHelper'
 import { isNotEmpty } from './DynamoObjectHelper'
 import { splitOperators } from '../parsers/property-parser'
+import { isReservedKeyword } from './keyword-helper'
 
 const containsToAttributeNames = (expression: string, attributeNames: any) => {
     if (expression && expression.toLowerCase().includes('contains(')) {
@@ -22,6 +23,7 @@ export const dynamoAttributeHelper = {
         object: any,
         beginsWith?: BeginsWith,
         filter?: string,
+        select?: string,
         attributeNames?: any
     ) {
         if (isNotEmpty(object)) {
@@ -50,6 +52,14 @@ export const dynamoAttributeHelper = {
                     } else {
                         throw Error(`Failed to convert filter to ExpressionAttributeNames: ${filter}`)
                     }
+                }
+            })
+        }
+        if (select) {
+            const names = select.split(',')
+            names.forEach((name: string) => {
+                if (isReservedKeyword(name)) {
+                    attributeNames[`#${name}`] = name
                 }
             })
         }

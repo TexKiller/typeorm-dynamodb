@@ -45,7 +45,7 @@ export class DynamoClient {
             })
             dynamoDBDocumentClient = LibDynamoDb.DynamoDBDocumentClient.from(client, {
                 marshallOptions: {
-                    convertClassInstanceToMap: true,
+                    convertClassInstanceToMap: false,
                     removeUndefinedValues: true
                 }
             })

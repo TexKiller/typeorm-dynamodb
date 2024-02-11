@@ -4,6 +4,7 @@ import { isNotEmpty } from '../helpers/DynamoObjectHelper'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { commonUtils } from '../utils/common-utils'
 import { captureQuotes, splitOperators } from '../parsers/property-parser'
+import { isReservedKeyword } from '../helpers/keyword-helper'
 
 const containsToFilterExpression = (expression: string) => {
     if (expression && expression.toLowerCase().includes('contains(')) {
@@ -59,7 +60,8 @@ export class FindOptions {
         return dynamoAttributeHelper.toAttributeNames(
             findOptions.where,
             findOptions.beginsWith,
-            findOptions.filter
+            findOptions.filter,
+            findOptions.select
         )
     }
 
@@ -143,6 +145,22 @@ export class FindOptions {
                 }
             })
             return filterExpression
+        }
+        return undefined
+    }
+
+    static toProjectionExpression (options: FindOptions) {
+        if (options.select) {
+            const names = options.select.split(',')
+            const safeNames: string[] = []
+            names.forEach((name: string) => {
+                if (isReservedKeyword(name)) {
+                    safeNames.push(`#${name}`)
+                } else {
+                    safeNames.push(name)
+                }
+            })
+            return safeNames.join(',')
         }
         return undefined
     }

@@ -4,6 +4,7 @@ import { Dummy } from '../entities/dummy'
 import { Request } from '../entities/request'
 import sinon from 'sinon'
 import { marshall } from '@aws-sdk/util-dynamodb'
+import { dummyZipper } from '../zippers/dummy-zipper'
 
 describe('dynamic-repository', () => {
     afterEach(() => {
@@ -174,6 +175,50 @@ describe('dynamic-repository', () => {
         expect(items.length).toBe(1)
     })
 
+    it('select reserved fields', async (): Promise<any> => {
+        await open({
+            entities: [Dummy, Request],
+            synchronize: true
+        })
+        const repository = getRepository(Dummy)
+
+        const dummy = new Dummy()
+        dummy.id = '123'
+        dummy.name = 'some-dummy-name'
+        dummy.adjustmentGroupId = '1'
+        dummy.adjustmentStatus = 'processed'
+        dummy.source = 'email'
+
+        const results: any = {
+            Items: [marshall(dummy, { convertClassInstanceToMap: true })]
+        }
+
+        const getStub = sinon.stub(DynamoClient.prototype, 'scan')
+        getStub.resolves(results)
+        const putStub = sinon.stub(DynamoClient.prototype, 'put')
+        putStub.resolves()
+
+        await repository.put(dummy)
+
+        const items = await repository.findAll({
+            filter: "name = 'some-dummy-name'",
+            select: 'id,source'
+        })
+
+        const expectedInput: any = {
+            FilterExpression: '#name = :name',
+            ExpressionAttributeNames: { '#name': 'name', '#source': 'source' },
+            ExpressionAttributeValues: {
+                ':name': { S: 'some-dummy-name' }
+            },
+            ProjectionExpression: 'id,#source'
+        }
+        expect(putStub.calledOnce).toBe(true)
+        expect(getStub.calledOnce).toBe(true)
+        sinon.assert.calledWithMatch(getStub, expectedInput)
+        expect(items.length).toBe(1)
+    })
+
     it('filter contains', async (): Promise<any> => {
         await open({
             entities: [Dummy, Request],
@@ -214,6 +259,44 @@ describe('dynamic-repository', () => {
         expect(putStub.calledOnce).toBe(true)
         expect(getStub.calledOnce).toBe(true)
         sinon.assert.calledWithMatch(getStub, expectedInput)
+        expect(items.length).toBe(1)
+    })
+
+    it('compression', async (): Promise<any> => {
+        await open({
+            entities: [Dummy, Request],
+            synchronize: true
+        })
+        const repository = getRepository(Dummy)
+
+        const dummy = new Dummy()
+        dummy.id = '123'
+        dummy.name = 'some-dummy-name'
+        dummy.adjustmentGroupId = '1'
+        dummy.adjustmentStatus = 'processed'
+        dummy.question = 'Hello World'
+
+        const results: any = {
+            Items: [marshall(dummy, { convertClassInstanceToMap: true })]
+        }
+
+        const getStub = sinon.stub(DynamoClient.prototype, 'scan')
+        getStub.resolves(results)
+        const putStub = sinon.stub(DynamoClient.prototype, 'put')
+        putStub.resolves()
+
+        const zippedDummy = await dummyZipper.zip(dummy)
+        await repository.put(zippedDummy)
+
+        const zippedLater = await repository.get(dummy.id)
+        const later = await dummyZipper.unzip(zippedLater!)
+
+        expect(later.question).toBe('Hello World')
+
+        const items = await repository.findAll()
+
+        expect(putStub.calledOnce).toBe(true)
+        expect(getStub.calledOnce).toBe(true)
         expect(items.length).toBe(1)
     })
 
