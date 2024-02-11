@@ -275,9 +275,10 @@ describe('dynamic-repository', () => {
         dummy.adjustmentGroupId = '1'
         dummy.adjustmentStatus = 'processed'
         dummy.question = 'Hello World'
+        const zippedItem = await dummyZipper.zip(dummy)
 
         const results: any = {
-            Items: [marshall(dummy, { convertClassInstanceToMap: true })]
+            Items: [marshall(zippedItem, { convertClassInstanceToMap: true })]
         }
 
         const getStub = sinon.stub(DynamoClient.prototype, 'scan')

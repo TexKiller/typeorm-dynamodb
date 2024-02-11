@@ -44,10 +44,7 @@ const unmarshallAll = (items?: any[]) => {
 }
 
 const marshallAll = (items?: any[]) => {
-    return (items || []).map(item => marshall(item, {
-        convertClassInstanceToMap: false,
-        removeUndefinedValues: true
-    }))
+    return (items || []).map(item => marshall(item))
 }
 
 export class DynamoEntityManager extends EntityManager {
