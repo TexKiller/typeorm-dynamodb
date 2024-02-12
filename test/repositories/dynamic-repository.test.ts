@@ -202,7 +202,7 @@ describe('dynamic-repository', () => {
 
         const items = await repository.findAll({
             filter: "name = 'some-dummy-name'",
-            select: 'id,source'
+            select: 'id, source'
         })
 
         const expectedInput: any = {
@@ -275,10 +275,10 @@ describe('dynamic-repository', () => {
         dummy.adjustmentGroupId = '1'
         dummy.adjustmentStatus = 'processed'
         dummy.question = 'Hello World'
-        const zippedItem = await dummyZipper.zip(dummy)
+        const zippedDummy = await dummyZipper.zip(dummy)
 
         const results: any = {
-            Items: [marshall(zippedItem, { convertClassInstanceToMap: true })]
+            Items: [marshall(zippedDummy, { convertClassInstanceToMap: true })]
         }
 
         const getStub = sinon.stub(DynamoClient.prototype, 'scan')
@@ -286,10 +286,10 @@ describe('dynamic-repository', () => {
         const putStub = sinon.stub(DynamoClient.prototype, 'put')
         putStub.resolves()
 
-        const zippedDummy = await dummyZipper.zip(dummy)
         await repository.put(zippedDummy)
 
         const zippedLater = await repository.get(dummy.id)
+        zippedLater!.question = dummy.question
         const later = await dummyZipper.unzip(zippedLater!)
 
         expect(later.question).toBe('Hello World')

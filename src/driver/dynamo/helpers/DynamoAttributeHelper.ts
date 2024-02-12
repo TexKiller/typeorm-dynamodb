@@ -58,8 +58,9 @@ export const dynamoAttributeHelper = {
         if (select) {
             const names = select.split(',')
             names.forEach((name: string) => {
-                if (isReservedKeyword(name)) {
-                    attributeNames[`#${name}`] = name
+                const trimmedName = name.trim()
+                if (isReservedKeyword(trimmedName)) {
+                    attributeNames[`#${trimmedName}`] = trimmedName
                 }
             })
         }

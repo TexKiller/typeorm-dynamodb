@@ -154,10 +154,11 @@ export class FindOptions {
             const names = options.select.split(',')
             const safeNames: string[] = []
             names.forEach((name: string) => {
-                if (isReservedKeyword(name)) {
-                    safeNames.push(`#${name}`)
+                const trimmedName = name.trim()
+                if (isReservedKeyword(trimmedName)) {
+                    safeNames.push(`#${trimmedName}`)
                 } else {
-                    safeNames.push(name)
+                    safeNames.push(trimmedName)
                 }
             })
             return safeNames.join(',')
