@@ -105,7 +105,7 @@ export class FindOptions {
             }
         }
         if (findOptions.filter) {
-            const expressions = findOptions.filter.split(/and|or/gi).map(expression => expression.trim())
+            const expressions = findOptions.filter.split(/ and | or /gi).map(expression => expression.trim())
             expressions.forEach(expression => {
                 expression = containsToAttributeValues(expression, values)
                 if (!expression.toLowerCase().includes('contains(')) {
@@ -128,7 +128,7 @@ export class FindOptions {
     static toFilterExpression (options: FindOptions) {
         if (options.filter) {
             let filterExpression = `${options.filter}`
-            const expressions = options.filter.split(/and|or/gi).map(expression => expression.trim())
+            const expressions = options.filter.split(/ and | or /gi).map(expression => expression.trim())
             expressions.forEach(expression => {
                 filterExpression = containsToFilterExpression(expression)
                 if (!expression.toLowerCase().includes('contains(')) {

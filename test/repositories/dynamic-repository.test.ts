@@ -281,7 +281,8 @@ describe('dynamic-repository', () => {
             Items: [marshall(zippedDummy, { convertClassInstanceToMap: true })]
         }
 
-        const getStub = sinon.stub(DynamoClient.prototype, 'scan')
+        sinon.stub(DynamoClient.prototype, 'scan').resolves(results)
+        const getStub = sinon.stub(DynamoClient.prototype, 'query')
         getStub.resolves(results)
         const putStub = sinon.stub(DynamoClient.prototype, 'put')
         putStub.resolves()

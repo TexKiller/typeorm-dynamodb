@@ -41,7 +41,7 @@ export const dynamoAttributeHelper = {
         }
         if (filter) {
             attributeNames = attributeNames || {}
-            const expressions = filter.split(/and|or/gi).map(expression => expression.trim())
+            const expressions = filter.split(/ and | or /gi).map(expression => expression.trim())
             expressions.forEach(expression => {
                 expression = containsToAttributeNames(expression, attributeNames)
                 if (!expression.toLowerCase().includes('contains(')) {
