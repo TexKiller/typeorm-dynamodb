@@ -144,6 +144,7 @@ describe('dynamic-repository', () => {
         dummy.name = 'some-dummy-name'
         dummy.adjustmentGroupId = '1'
         dummy.adjustmentStatus = 'processed'
+        dummy.email = 'sandhiya.boopathy@libertymutual.com'
 
         const results: any = {
             Items: [marshall(dummy, { convertClassInstanceToMap: true })]
@@ -157,23 +158,79 @@ describe('dynamic-repository', () => {
         await repository.put(dummy)
 
         const items = await repository.findAll({
-            filter: "name = 'some-dummy-name'",
+            filter: "email = 'sandhiya.boopathy@libertymutual.com'",
             select: 'id,adjustmentStatus'
         })
 
         const expectedInput: any = {
-            FilterExpression: '#name = :name',
-            ExpressionAttributeNames: { '#name': 'name' },
-            ExpressionAttributeValues: {
-                ':name': { S: 'some-dummy-name' }
+            TableName: 'dummy_t',
+            ExpressionAttributeNames: {
+                '#email': 'email'
             },
-            ProjectionExpression: 'id,adjustmentStatus'
+            ExpressionAttributeValues: {
+                ':email': {
+                    S: 'sandhiya.boopathy@libertymutual.com'
+                }
+            },
+            FilterExpression: '#email = :email',
+            ProjectionExpression: 'id,adjustmentStatus',
+            ScanIndexForward: true
         }
         expect(putStub.calledOnce).toBe(true)
         expect(getStub.calledOnce).toBe(true)
         sinon.assert.calledWithMatch(getStub, expectedInput)
         expect(items.length).toBe(1)
-    })
+    }, 10000)
+
+    it('filter and select single quote', async (): Promise<any> => {
+        await open({
+            entities: [Dummy, Request],
+            synchronize: true
+        })
+        const repository = getRepository(Dummy)
+
+        const dummy = new Dummy()
+        dummy.id = '123'
+        dummy.name = 'some-dummy-name'
+        dummy.adjustmentGroupId = '1'
+        dummy.adjustmentStatus = 'processed'
+        dummy.email = "ryan.o'flanagan@libertymutual.com"
+
+        const results: any = {
+            Items: [marshall(dummy, { convertClassInstanceToMap: true })]
+        }
+
+        const getStub = sinon.stub(DynamoClient.prototype, 'scan')
+        getStub.resolves(results)
+        const putStub = sinon.stub(DynamoClient.prototype, 'put')
+        putStub.resolves()
+
+        await repository.put(dummy)
+
+        const items = await repository.findAll({
+            filter: 'email = "ryan.o\'flanagan@libertymutual.com"',
+            select: 'id,adjustmentStatus'
+        })
+
+        const expectedInput: any = {
+            TableName: 'dummy_t',
+            ExpressionAttributeNames: {
+                '#email': 'email'
+            },
+            ExpressionAttributeValues: {
+                ':email': {
+                    S: "ryan.o'flanagan@libertymutual.com"
+                }
+            },
+            FilterExpression: '#email = :email',
+            ProjectionExpression: 'id,adjustmentStatus',
+            ScanIndexForward: true
+        }
+        expect(putStub.calledOnce).toBe(true)
+        expect(getStub.calledOnce).toBe(true)
+        sinon.assert.calledWithMatch(getStub, expectedInput)
+        expect(items.length).toBe(1)
+    }, 10000)
 
     it('select reserved fields', async (): Promise<any> => {
         await open({

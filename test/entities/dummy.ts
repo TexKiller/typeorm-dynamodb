@@ -14,6 +14,9 @@ export class Dummy {
     @Column({ name: 'adjustmentStatus', type: 'varchar' })
     adjustmentStatus: string
 
+    @Column({ name: 'email', type: 'varchar' })
+    email: string
+
     // in dynamodb  we don't need to map all columns
     name: string
 
