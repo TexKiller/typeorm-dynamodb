@@ -57,7 +57,8 @@
     "@aws-sdk/client-dynamodb": "^3.540",
     "@aws-sdk/lib-dynamodb": "^3.540",
     "@aws-sdk/util-dynamodb": "^3.540",
-    "@smithy/node-http-handler": "^3"
+    "@smithy/node-http-handler": "^3",
+    "typeorm": "^0.3.15"
   },
   "engines": {
     "node": ">=18"

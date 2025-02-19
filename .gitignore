@@ -2,7 +2,6 @@
 node_modules
 build
 test-reports
-dist
 src/entities/*.java
 src/entities/*.ts
 !src/driver/dynamo/entities/base-entity.ts

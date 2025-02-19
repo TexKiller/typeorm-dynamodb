@@ -1,0 +1,12 @@
+import { EntityMetadata } from 'typeorm';
+import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
+import { DynamoDriver } from '../DynamoDriver';
+export declare const buildPartitionKey: (columns: ColumnMetadata[]) => string;
+export declare const indexedColumns: (metadata: EntityMetadata, doc: any) => void;
+export declare const populateGeneratedColumns: (metadata: EntityMetadata, doc: any) => void;
+export declare const buildAttributeDefinitions: (metadata: EntityMetadata, driver: DynamoDriver) => any[];
+export declare const buildGlobalSecondaryIndexes: (metadata: EntityMetadata) => any[] | undefined;
+export declare const waitUntilActive: (db: any, tableName: string) => Promise<void>;
+export declare const updateGlobalSecondaryIndexes: (db: any, tableName: string, attributeDefinitions: any[], globalSecondaryIndexes: any[]) => Promise<void>;
+export declare const deleteGlobalSecondaryIndex: (db: any, tableName: string, indexName: string) => Promise<void>;
+export declare const addGlobalSecondaryIndex: (db: any, tableName: string, attributeDefinitions: any[], globalSecondaryIndex: any) => Promise<void>;
