@@ -31,6 +31,8 @@ import { AuroraMysqlDriver } from 'typeorm/driver/aurora-mysql/AuroraMysqlDriver
 import { AuroraPostgresDriver } from 'typeorm/driver/aurora-postgres/AuroraPostgresDriver'
 import { CapacitorDriver } from 'typeorm/driver/capacitor/CapacitorDriver'
 import { SpannerDriver } from 'typeorm/driver/spanner/SpannerDriver'
+import { DynamoDBClientConfigType } from '@aws-sdk/client-dynamodb'
+import { DynamoClient } from '../DynamoClient'
 
 let connection: any = null
 let entityManager: any = null
@@ -210,7 +212,8 @@ PlatformTools.load = function (name) {
 
 export class DatasourceManagerOptions {
     entities?: ((Function | string | EntitySchema))[];
-    synchronize?: boolean
+    clientConfig?: DynamoDBClientConfigType;
+    synchronize?: boolean;
 }
 
 const DEFAULT_OPTIONS: DatasourceManagerOptions = {
@@ -227,6 +230,10 @@ export const datasourceManager = {
                 entities: options?.entities
             }
             connection = await new DataSource(connectionOptions).initialize()
+        }
+
+        if (options.clientConfig) {
+            new DynamoClient().getClient(options.clientConfig)
         }
 
         if (options.synchronize) {
